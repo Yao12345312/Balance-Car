@@ -1,0 +1,143 @@
+
+
+#define CANARD_DSDLC_INTERNAL
+#include <uavcan.equipment.esc.CubeStatus.h>
+
+#include <string.h>
+
+#ifdef CANARD_DSDLC_TEST_BUILD
+#include <test_helpers.h>
+#endif
+
+uint32_t _uavcan_equipment_esc_CubeStatus_encode(struct uavcan_equipment_esc_CubeStatus* msg, uint8_t* buffer
+#if CANARD_ENABLE_TAO_OPTION
+    , bool tao
+#endif
+) {
+    uint32_t bit_ofs = 0;
+    memset(buffer, 0, UAVCAN_EQUIPMENT_ESC_CUBESTATUS_MAX_SIZE);
+    __uavcan_equipment_esc_CubeStatus_encode(buffer, &bit_ofs, msg,
+#if CANARD_ENABLE_TAO_OPTION
+    tao
+#else
+    true
+#endif
+    );
+    return ((bit_ofs+7)/8);
+}
+
+/*
+  return true if the decode is invalid
+ */
+bool _uavcan_equipment_esc_CubeStatus_decode(const CanardRxTransfer* transfer, struct uavcan_equipment_esc_CubeStatus* msg) {
+#if CANARD_ENABLE_TAO_OPTION
+    if (transfer->tao && (transfer->payload_len > UAVCAN_EQUIPMENT_ESC_CUBESTATUS_MAX_SIZE)) {
+        return true; /* invalid payload length */
+    }
+#endif
+    uint32_t bit_ofs = 0;
+    if (__uavcan_equipment_esc_CubeStatus_decode(transfer, &bit_ofs, msg,
+#if CANARD_ENABLE_TAO_OPTION
+    transfer->tao
+#else
+    true
+#endif
+    )) {
+        return true; /* invalid payload */
+    }
+
+    const uint32_t byte_len = (bit_ofs+7U)/8U;
+#if CANARD_ENABLE_TAO_OPTION
+    // if this could be CANFD then the dlc could indicating more bytes than
+    // we actually have
+    if (!transfer->tao) {
+        return byte_len > transfer->payload_len;
+    }
+#endif
+    return byte_len != transfer->payload_len;
+}
+
+#ifdef CANARD_DSDLC_TEST_BUILD
+struct uavcan_equipment_esc_CubeStatus sample_uavcan_equipment_esc_CubeStatus_msg(void) {
+
+    struct uavcan_equipment_esc_CubeStatus msg;
+
+
+
+
+
+
+    msg.calib_done = (uint8_t)random_bitlen_unsigned_val(2);
+
+
+
+
+
+
+
+    msg.voltage = random_float16_val();
+
+
+
+
+
+
+
+    msg.current = random_float16_val();
+
+
+
+
+
+
+
+    msg.temperature = random_float16_val();
+
+
+
+
+
+
+
+    msg.id = random_float16_val();
+
+
+
+
+
+
+
+    msg.iq = random_float16_val();
+
+
+
+
+
+
+
+    msg.rpm = (int32_t)random_bitlen_signed_val(18);
+
+
+
+
+
+
+
+    msg.target_rpm = (int32_t)random_bitlen_signed_val(18);
+
+
+
+
+
+
+
+    msg.esc_index = (uint8_t)random_bitlen_unsigned_val(5);
+
+
+
+
+
+    return msg;
+
+}
+#endif
