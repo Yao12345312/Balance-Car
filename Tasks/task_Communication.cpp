@@ -32,6 +32,9 @@ void StartCommunicationTask(void *argument)
         if (n > 0)
             MAVLink::ParseData(buf, n);
 
+        // LED 心跳监视 (收到心跳 1Hz 闪绿灯, 超时断连 1Hz 闪蓝灯)
+        MAVLink::LedTick();
+
         // 从控制任务队列取传感数据, 有则上报姿态 + 电池
         if (g_mavSensorQueue != NULL)
         {

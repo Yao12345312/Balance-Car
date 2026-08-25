@@ -20,7 +20,8 @@ void StartDisplayTask(void *argument)
 	while (1)
 	{
 		
-		next_wake += 50U;
+
+		next_wake += 30U;
         osDelayUntil(next_wake);
 		
 	}

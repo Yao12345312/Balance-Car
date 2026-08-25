@@ -2,9 +2,8 @@
 
 /* ================= 构造函数 ================= */
 
-DrvLed::DrvLed(BoardPwmPort port)
-    : m_port(port)
-    , m_blinkTaskHandle(NULL)
+DrvLed::DrvLed()
+    : m_blinkTaskHandle(NULL)
     , m_blinkRed(0)
     , m_blinkGreen(0)
     , m_blinkBlue(0)
@@ -14,14 +13,6 @@ DrvLed::DrvLed(BoardPwmPort port)
 {
 }
 
-/* ================= 百分比转占空比 ================= */
-
-float DrvLed::percentToDuty(uint8_t percent)
-{
-    if (percent > 100) percent = 100;
-    return (float)percent / 100.0f;
-}
-
 /* ================= 初始化 ================= */
 
 bool DrvLed::init()
@@ -29,13 +20,10 @@ bool DrvLed::init()
     if (m_isInitialized)
         return true;
 
-    if (m_port == BOARD_PWM_NONE)
-        return false;
-
-    // 启动三路 PWM 通道 (位或一次传入)
-    uint32_t channels = RED_CHANNEL | GREEN_CHANNEL | BLUE_CHANNEL;
-    if (board_pwm_start(m_port, channels) != BOARD_OK)
-        return false;
+    // 初始化 R/G/B 三路 GPIO 输出 (推挽, 默认拉低熄灭)
+    board_led_init(BOARD_LED_R);
+    board_led_init(BOARD_LED_G);
+    board_led_init(BOARD_LED_B);
 
     turnOff();
 
@@ -152,19 +140,19 @@ bool DrvLed::isBlinking(void)
 void DrvLed::setRed(uint8_t value)
 {
     if (!m_isInitialized) return;
-    board_pwm_set_duty(m_port, RED_CHANNEL, percentToDuty(value));
+    board_led_set(BOARD_LED_R, value != 0);
 }
 
 void DrvLed::setGreen(uint8_t value)
 {
     if (!m_isInitialized) return;
-    board_pwm_set_duty(m_port, GREEN_CHANNEL, percentToDuty(value));
+    board_led_set(BOARD_LED_G, value != 0);
 }
 
 void DrvLed::setBlue(uint8_t value)
 {
     if (!m_isInitialized) return;
-    board_pwm_set_duty(m_port, BLUE_CHANNEL, percentToDuty(value));
+    board_led_set(BOARD_LED_B, value != 0);
 }
 
 /* ================= 熄灭全部 LED ================= */
@@ -180,12 +168,12 @@ void DrvLed::turnOff()
 
 static DrvLed *g_drv_led = nullptr;
 
-void init_drv_led(BoardPwmPort port)
+void init_drv_led()
 {
     if (g_drv_led)
         return;
 
-    g_drv_led = new DrvLed(port);
+    g_drv_led = new DrvLed();
     if (g_drv_led)
         g_drv_led->init();
 }

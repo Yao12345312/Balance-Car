@@ -23,7 +23,7 @@
 #include "stm32h7xx_hal.h"
 #include "usbd_def.h"
 #include "usbd_core.h"
-#include "usbd_cdc.h"
+#include "usbd_msc.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -39,7 +39,6 @@
 /* USER CODE END PV */
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
-void Error_Handler(void);
 
 /* External functions --------------------------------------------------------*/
 
@@ -73,13 +72,20 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
 
   /* USER CODE END USB_OTG_FS_MspInit 0 */
 
-  /** Initializes the peripherals clock
-  */
+	//USB PLL3 48Mhz时钟配置
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
-    PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+    PeriphClkInitStruct.UsbClockSelection    = RCC_USBCLKSOURCE_PLL3;
+    PeriphClkInitStruct.PLL3.PLL3M           = 2;
+    PeriphClkInitStruct.PLL3.PLL3N           = 24;
+    PeriphClkInitStruct.PLL3.PLL3P           = 4;
+    PeriphClkInitStruct.PLL3.PLL3Q           = 4;
+    PeriphClkInitStruct.PLL3.PLL3R           = 4;
+    PeriphClkInitStruct.PLL3.PLL3RGE         = RCC_PLL3VCIRANGE_3;
+    PeriphClkInitStruct.PLL3.PLL3VCOSEL      = RCC_PLL3VCOWIDE;
+    PeriphClkInitStruct.PLL3.PLL3FRACN       = 0;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
-      Error_Handler();
+      while(1);
     }
 
   /** Enable USB Voltage detector
@@ -94,7 +100,7 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_FS;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -216,7 +222,7 @@ void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
   }
   else
   {
-    Error_Handler();
+    while(1);
   }
     /* Set Speed. */
   USBD_LL_SetSpeed((USBD_HandleTypeDef*)hpcd->pData, speed);
@@ -346,7 +352,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
   hpcd_USB_OTG_FS.Init.dev_endpoints = 9;
   hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
+  hpcd_USB_OTG_FS.Init.dma_enable = ENABLE;
   hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
   hpcd_USB_OTG_FS.Init.Sof_enable = DISABLE;
   hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
@@ -356,7 +362,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
   {
-    Error_Handler( );
+    while(1);
   }
 
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
@@ -638,7 +644,7 @@ USBD_StatusTypeDef USBD_LL_SetTestMode(USBD_HandleTypeDef *pdev, uint8_t testmod
 void *USBD_static_malloc(uint32_t size)
 {
   UNUSED(size);
-  static uint32_t mem[(sizeof(USBD_CDC_HandleTypeDef)/4)+1];/* On 32-bit boundary */
+  static uint32_t mem[(sizeof(USBD_MSC_BOT_HandleTypeDef)/4)+1];/* On 32-bit boundary */
   return mem;
 }
 

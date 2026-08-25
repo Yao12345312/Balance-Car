@@ -4,19 +4,19 @@
 #include "cmsis_os2.h"
 #include <stdint.h>
 
-// RGB LED PWM 驱动 (基于 board_pwm_* 接口)
-// 使用一个定时器的 CH2/CH3/CH4 三路 PWM 分别驱动 R/G/B
-// 百分比 0-100 内部映射为占空比 0.0~1.0 (由 board_pwm_set_duty 转为 CCR)
+// RGB LED GPIO 驱动 (基于 board_led_* 接口)
+// 三色通道无 TIM 复用通道, 直接 GPIO 高低电平控制
+// setRGB/setRed/... 参数非 0 即点亮该通道 (GPIO 无中间亮度)
 class DrvLed
 {
 public:
-    // port: RGB 所在的逻辑 PWM 端口
-    DrvLed(BoardPwmPort port);
+    // 引脚绑定在 board.cpp 中完成 (R=PD5 G=PD4 B=PD3)
+    DrvLed();
 
-    // 启动三路 PWM 通道并熄灭 LED
+    // 初始化三路 GPIO 输出并熄灭 LED
     bool init();
 
-    // 设置 RGB 占空比 (百分比, 总和无需严格等于 100, 各路独立 0-100)
+    // 设置 RGB (各通道非 0 即点亮)
     void setRGB(uint8_t red, uint8_t green, uint8_t blue);
 
     // 设置 RGB 并以指定频率闪烁 (在独立任务中运行)
@@ -29,9 +29,9 @@ public:
     // 当前是否正在闪烁
     bool isBlinking();
 
-    void setRed(uint8_t value);     // 红色百分比 (0-100)
-    void setGreen(uint8_t value);   // 绿色百分比 (0-100)
-    void setBlue(uint8_t value);    // 蓝色百分比 (0-100)
+    void setRed(uint8_t value);     // 红色 (非 0 点亮)
+    void setGreen(uint8_t value);   // 绿色 (非 0 点亮)
+    void setBlue(uint8_t value);    // 蓝色 (非 0 点亮)
 
     void turnOff();                 // 熄灭全部 LED
 
@@ -39,7 +39,6 @@ private:
     static void blinkTaskFunc(void *parameter);
     void blinkTask();
 
-    BoardPwmPort      m_port;
     osThreadId_t      m_blinkTaskHandle;
     uint8_t           m_blinkRed;
     uint8_t           m_blinkGreen;
@@ -47,16 +46,8 @@ private:
     uint16_t          m_blinkHalfPeriodMs;
     volatile bool     m_blinkRunning;
     bool              m_isInitialized;
-
-    // 通道映射 (与参考工程一致: CH4=R, CH3=G, CH2=B)
-    static constexpr uint32_t RED_CHANNEL   = PWM_CH_4;
-    static constexpr uint32_t GREEN_CHANNEL = PWM_CH_3;
-    static constexpr uint32_t BLUE_CHANNEL  = PWM_CH_2;
-
-    // 百分比 (0-100) -> 占空比 (0.0~1.0)
-    static float percentToDuty(uint8_t percent);
 };
 
-// 全局访问 (需调用方先 init_drv_led(BOARD_PWM_LED) 传入已配置的端口)
-void init_drv_led(BoardPwmPort port);
+// 全局访问 (内部绑定 R=PD5 G=PD4 B=PD3, 见 board.cpp)
+void init_drv_led();
 DrvLed *drv_led();

@@ -82,6 +82,30 @@ typedef enum
     BOARD_PWM_COUNT
 } BoardPwmPort;
 
+//为本板指定逻辑三色LED通道名 (无TIM复用通道, GPIO高低电平控制)
+typedef enum
+{
+    BOARD_LED_NONE = 0,
+
+    BOARD_LED_R,            // R -> PD5
+    BOARD_LED_G,            // G -> PD4
+    BOARD_LED_B,            // B -> PD3
+
+    BOARD_LED_COUNT
+} BoardLedPin;
+
+//为本板指定逻辑按键名
+typedef enum
+{
+    BOARD_KEY_NONE = 0,
+
+    BOARD_KEY_1,            // PB4
+    BOARD_KEY_2,            // PD7
+    BOARD_KEY_3,            // PD6
+
+    BOARD_KEY_COUNT
+} BoardKey;
+
 //获取外设注册表
 extern const BoardSpiEntry  board_spi_ports[BOARD_SPI_COUNT];
 extern const BoardI2cEntry  board_i2c_ports[BOARD_I2C_COUNT];
@@ -102,6 +126,10 @@ void        board_spi_unlock(BoardSpiPort port);
 void        board_cs_init(BoardCsPin cs);
 void        board_cs_set(BoardCsPin cs);
 void        board_cs_clear(BoardCsPin cs);
+
+//三色LED GPIO 控制接口 (高低电平, 高电平点亮)
+void        board_led_init(BoardLedPin led);
+void        board_led_set(BoardLedPin led, bool on);
 
 BoardResult board_i2c_write(BoardI2cPort port, uint8_t dev_addr, const uint8_t *data, uint16_t size, double timeout = -1.0);
 BoardResult board_i2c_read(BoardI2cPort port, uint8_t dev_addr, uint8_t *data, uint16_t size, double timeout = -1.0);

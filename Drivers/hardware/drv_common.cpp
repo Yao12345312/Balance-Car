@@ -55,6 +55,20 @@ void HW_ConfigurePinOutput(const HwPin *pin, uint32_t otype, uint32_t pull, uint
     HAL_GPIO_Init(HW_GpioTable[pin->port], &gpio);
 }
 
+void HW_ConfigurePinInput(const HwPin *pin, uint32_t pull)
+{
+    if (!pin || pin->port > 10)
+        return;
+
+    HW_GpioClockEnable(pin->port);
+
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = (uint16_t)(1u << pin->pin);
+    gpio.Mode = GPIO_MODE_INPUT;
+    gpio.Pull = pull;
+    HAL_GPIO_Init(HW_GpioTable[pin->port], &gpio);
+}
+
 static DMA_HandleTypeDef *s_dmaHandles[16];
 
 static uint8_t s_dmaIndex(uint8_t dma_num, uint8_t stream)

@@ -102,6 +102,6 @@ extern "C" void vApplicationIdleHook(void)
             }
         }
     }
-	//进入低功耗模式
-    __WFI();
+	//进入低功耗模式会导致USB设备描述符请求失败，这里注释掉
+    //__WFI();
 }

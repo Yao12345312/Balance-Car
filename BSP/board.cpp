@@ -7,6 +7,7 @@
 #include "hardware/drv_pwm.hpp"
 #include "hardware/drv_common.hpp"
 
+#include "input/drv_key.hpp"
 #include "drv_Main.hpp"
 #include "TimeBase.h"
 #include "basic.hpp"
@@ -266,6 +267,53 @@ void board_cs_clear(BoardCsPin cs)
     const HwPin *p = &board_cs_pins[cs];
     HAL_GPIO_WritePin(HW_GpioTable[p->port], (uint16_t)(1u << p->pin), GPIO_PIN_RESET);
 }
+
+// =============================================================================
+// 板级三色 LED 配置 (R=PD5 G=PD4 B=PD3)
+// =============================================================================
+
+// 三色 LED 引脚 (无对应 TIM 复用通道, 直接 GPIO 高低电平控制, 高电平点亮)
+static const HwPin board_led_pins[BOARD_LED_COUNT] = {
+    {0, 0, 0},               // BOARD_LED_NONE
+
+    HW_PIN(3, 3, 0),         // BOARD_LED_R -> PD3
+    HW_PIN(3, 5, 0),         // BOARD_LED_G -> PD5
+    HW_PIN(3, 4, 0),         // BOARD_LED_B -> PD4
+};
+
+void board_led_init(BoardLedPin led)
+{
+    if (led <= BOARD_LED_NONE || led >= BOARD_LED_COUNT)
+        return;
+    const HwPin *p = &board_led_pins[led];
+    if (!p->port && !p->pin)
+        return;
+    HW_ConfigurePinOutput(p, HW_OTYPE_PUSH_PULL, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW);
+    HAL_GPIO_WritePin(HW_GpioTable[p->port], (uint16_t)(1u << p->pin), GPIO_PIN_RESET);
+}
+
+void board_led_set(BoardLedPin led, bool on)
+{
+    if (led <= BOARD_LED_NONE || led >= BOARD_LED_COUNT)
+        return;
+    const HwPin *p = &board_led_pins[led];
+    HAL_GPIO_WritePin(HW_GpioTable[p->port], (uint16_t)(1u << p->pin),
+                      on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+// =============================================================================
+// 板级按键配置表
+// =============================================================================
+
+// 按键引脚 ( KEY1=PB4 KEY2=PD7 KEY3=PD6)
+// 接 VCC, 内部下拉, 高电平有效
+const KeyConfig board_key_configs[BOARD_KEY_COUNT] = {
+    { {0, 0, 0},                 DrvKey::ActiveLevel::High, 0,    0,  GPIO_NOPULL    },  // BOARD_KEY_NONE
+
+    { HW_PIN(1, 4, 0),           DrvKey::ActiveLevel::High, 1000, 20, GPIO_PULLDOWN  },  // BOARD_KEY_1 -> PB4
+    { HW_PIN(3, 7, 0),           DrvKey::ActiveLevel::High, 1000, 20, GPIO_PULLDOWN  },  // BOARD_KEY_2 -> PD7
+    { HW_PIN(3, 6, 0),           DrvKey::ActiveLevel::High, 1000, 20, GPIO_PULLDOWN  },  // BOARD_KEY_3 -> PD6
+};
 
 
 

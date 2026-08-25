@@ -2,6 +2,7 @@
 #include "board.hpp"
 #include "param.hpp"
 #include "task_Control.hpp"
+#include "led/drv_led.hpp"
 
 #include <cmsis_os2.h>
 #include <string.h>
@@ -38,6 +39,17 @@ static volatile uint16_t param_stream_idx   = 0;
 
 // 每周期最多发送的 PARAM_VALUE 帧数 (避免堵塞蓝牙, ~25B/帧)
 #define PARAM_STREAM_CHUNK 2u
+
+// 心跳超时阈值: 超过该时间未收到心跳即判定蓝牙断连 (上位机心跳约 1Hz)
+#define MAVLINK_HEARTBEAT_TIMEOUT_MS 3000U
+
+// LED 灯语状态 (仅状态变化时才切换闪烁, 避免反复重启闪烁任务)
+enum LedLinkState {
+    LED_LINK_UNKNOWN = 0,   // 未初始化
+    LED_LINK_CONNECTED,     // 已连接 -> 闪绿灯
+    LED_LINK_DISCONNECTED,  // 已断连 -> 闪蓝灯
+};
+static LedLinkState s_led_link_state = LED_LINK_UNKNOWN;
 
 // 发送单条 PARAM_VALUE (按索引), 失败/越界返回 false
 static bool sendParamValue(uint16_t index)
@@ -303,6 +315,49 @@ void ParamStreamTick(void)
         }
         sendParamValue(param_stream_idx);
         param_stream_idx++;
+    }
+}
+
+void LedTick(void)
+{
+    uint32_t now = osKernelGetTickCount();
+    bool connected;
+
+    // 超时检测: 收到心跳后更新 last_hb_time, 超出阈值未收到则判为断连
+    if (mav_status_mutex)
+        osMutexAcquire(mav_status_mutex, osWaitForever);
+
+    if (mav_status_info.link_active &&
+        (now - mav_status_info.last_hb_time) > MAVLINK_HEARTBEAT_TIMEOUT_MS)
+    {
+        mav_status_info.link_active = 0;
+        set_mavlink_connect_status(false);
+    }
+    connected = (mav_status_info.link_active != 0);
+
+    if (mav_status_mutex)
+        osMutexRelease(mav_status_mutex);
+
+    // 根据连接状态切换 LED 灯语, 状态变化时才调用
+    DrvLed *led = drv_led();
+    if (!led)
+        return;
+
+    if (connected)
+    {
+        if (s_led_link_state != LED_LINK_CONNECTED)
+        {
+            led->setRGBBlink(0, 100, 0, 1);   // 绿灯 1Hz 闪烁
+            s_led_link_state = LED_LINK_CONNECTED;
+        }
+    }
+    else
+    {
+        if (s_led_link_state != LED_LINK_DISCONNECTED)
+        {
+            led->setRGBBlink(0, 0, 100, 1);   // 蓝灯 1Hz 闪烁
+            s_led_link_state = LED_LINK_DISCONNECTED;
+        }
     }
 }
 

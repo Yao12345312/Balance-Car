@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "board.hpp"
 
-//printf 输出重定向: 原 BOARD_UART_DEBUG (UART4) 已被 US-100 超声波占用,
+//printf 输出重定向: 
 //此处将 printf 输出置为空操作, 保留接口避免破坏调用 printf 的代码.
 //如需恢复调试输出, 可将 retarget_put 改为写入其它空闲 UART.
 //以上符号在 semihosting_stubs.c 中均为 weak 定义, 此处的强定义会自动覆盖.

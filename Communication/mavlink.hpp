@@ -26,6 +26,9 @@ void SendAttitude(float roll, float pitch, float yaw,
 // 参数协议: 推进流式广播 (PARAM_REQUEST_LIST 触发, 每周期发若干帧 PARAM_VALUE)
 void ParamStreamTick(void);
 
+// LED 灯语心跳监视: 收到心跳 -> 1Hz 闪绿灯; 超时断连 -> 1Hz 闪蓝灯 (周期性调用)
+void LedTick(void);
+
 // 连接状态
 bool get_mavlink_connect_status(void);
 void set_mavlink_connect_status(bool status);

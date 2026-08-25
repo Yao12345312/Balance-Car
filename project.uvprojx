@@ -19,7 +19,7 @@
           <Vendor>STMicroelectronics</Vendor>
           <PackID>Keil.STM32H7xx_DFP.3.1.1</PackID>
           <PackURL>https://www.keil.com/pack/</PackURL>
-          <Cpu>IRAM(0x20000000,0x00020000) IRAM2(0x24000000,0x00080000) IROM(0x08000000,0x00100000) IROM2(0x08100000,0x00100000) XRAM(0x30000000,0x00048000) XRAM2(0x38000000,0x00010000) CPUTYPE("Cortex-M7") FPU3(DFPU) CLOCK(12000000) ELITTLE</Cpu>
+          <Cpu>IRAM(0x20000000,0x00020000) IRAM2(0x24000000,0x00080000) IROM(0x08100000,0x00100000) XRAM(0x30000000,0x00048000) XRAM2(0x38000000,0x00010000) CPUTYPE("Cortex-M7") FPU3(DFPU) CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
           <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD20000000 -FC8000 -FN1 -FF0STM32H7x_2048 -FS08000000 -FL0200000 -FP0($$Device:STM32H743VITx$CMSIS\Flash\STM32H7x_2048.FLM))</FlashDriverDll>
@@ -189,7 +189,7 @@
             <RvdsCdeCp>0</RvdsCdeCp>
             <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
-            <hadIROM2>1</hadIROM2>
+            <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
             <useUlib>0</useUlib>
             <EndSel>0</EndSel>
@@ -252,7 +252,7 @@
               </IRAM>
               <IROM>
                 <Type>1</Type>
-                <StartAddress>0x8000000</StartAddress>
+                <StartAddress>0x8100000</StartAddress>
                 <Size>0x100000</Size>
               </IROM>
               <XRAM>
@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>.\CMSIS;.\HAL_Library\Inc;.\HAL_Library\Inc\Legacy;.\Basic;.\BSP;.\Drivers\hardware;.\Drivers;.\Drivers\sensors;.\Drivers\ble;.\Drivers\esc;.\Drivers\buzzer;.\Drivers\oled;.\Drivers\middleWare\RTOS;.\Drivers\middleWare\RTOS\include;.\Drivers\middleWare\RTOS\CMSIS_RTOS_V2;.\Drivers\middleWare\RTOS\portable\ARM_CM7\r0p1;.\Drivers\middleWare\MAVlink\commonACFly;.\Drivers\middleWare\DroneCan;.\Drivers\middleWare\DroneCan\include;.\Drivers\middleWare\U8g2;.\Tasks;.\Communication;.\ControlSystem</IncludePath>
+              <IncludePath>.\CMSIS;.\HAL_Library\Inc;.\HAL_Library\Inc\Legacy;.\Basic;.\BSP;.\Drivers\hardware;.\Drivers;.\Drivers\sensors;.\Drivers\ble;.\Drivers\esc;.\Drivers\buzzer;.\Drivers\oled;.\Drivers\input;.\Drivers\middleWare\RTOS;.\Drivers\middleWare\RTOS\include;.\Drivers\middleWare\RTOS\CMSIS_RTOS_V2;.\Drivers\middleWare\RTOS\portable\ARM_CM7\r0p1;.\Drivers\middleWare\MAVlink\commonACFly;.\Drivers\middleWare\DroneCan;.\Drivers\middleWare\DroneCan\include;.\Drivers\middleWare\U8g2;.\Drivers\middleWare\USBDevice\App;.\Drivers\middleWare\USBDevice\Library;.\Drivers\middleWare\USBDevice\Target;.\Drivers\middleWare\FatFs\src;.\Drivers\middleWare\FatFs\App;.\Drivers\middleWare\FatFs\Target;.\Tasks;.\Communication;.\ControlSystem</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -363,13 +363,13 @@
             </VariousControls>
           </Aads>
           <LDads>
-            <umfTarg>1</umfTarg>
+            <umfTarg>0</umfTarg>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
             <noStLib>0</noStLib>
             <RepFail>1</RepFail>
             <useFile>0</useFile>
-            <TextAddressRange>0x08000000</TextAddressRange>
+            <TextAddressRange>0x08100000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
             <ScatterFile>.\Objects\project.sct</ScatterFile>
@@ -635,6 +635,21 @@
               <FileType>5</FileType>
               <FilePath>.\BSP\board.hpp</FilePath>
             </File>
+            <File>
+              <FileName>bsp_driver_sd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\bsp_driver_sd.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_sd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\bsp_sd.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_usb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\bsp_usb.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -764,6 +779,16 @@
               <FileName>drv_led.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\Drivers\led\drv_led.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Drivers\input</GroupName>
+          <Files>
+            <File>
+              <FileName>drv_key.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Drivers\input\drv_key.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -1094,6 +1119,111 @@
               <FileName>u8x8_u16toa.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Drivers\middleWare\U8g2\u8x8_u16toa.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Drivers\middleWare\USBDevice</GroupName>
+          <Files>
+            <File>
+              <FileName>usbd_conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Target\usbd_conf.h</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_conf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Target\usbd_conf.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>usb_device.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\App\usb_device.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_desc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\App\usbd_desc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_storage_if.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\App\usbd_storage_if.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_ctlreq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_ctlreq.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_ioreq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_ioreq.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_msc.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc_bot.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_msc_bot.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc_data.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_msc_data.c</FilePath>
+            </File>
+            <File>
+              <FileName>usbd_msc_scsi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\USBDevice\Library\usbd_msc_scsi.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Drivers\middleWare\FatFs</GroupName>
+          <Files>
+            <File>
+              <FileName>diskio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\src\diskio.c</FilePath>
+            </File>
+            <File>
+              <FileName>ff.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\src\ff.c</FilePath>
+            </File>
+            <File>
+              <FileName>ff_gen_drv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\src\ff_gen_drv.c</FilePath>
+            </File>
+            <File>
+              <FileName>syscall.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\src\option\syscall.c</FilePath>
+            </File>
+            <File>
+              <FileName>cc936.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\src\option\cc936.c</FilePath>
+            </File>
+            <File>
+              <FileName>sd_diskio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\Target\sd_diskio.c</FilePath>
+            </File>
+            <File>
+              <FileName>fatfs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\middleWare\FatFs\App\fatfs.c</FilePath>
             </File>
           </Files>
         </Group>

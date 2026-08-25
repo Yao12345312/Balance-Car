@@ -69,6 +69,7 @@ extern GPIO_TypeDef *const HW_GpioTable[11];
 void HW_GpioClockEnable(uint8_t port);
 void HW_ConfigurePinAF(const HwPin *pin, uint32_t mode, uint32_t pull, uint32_t speed);
 void HW_ConfigurePinOutput(const HwPin *pin, uint32_t otype, uint32_t pull, uint32_t speed);
+void HW_ConfigurePinInput(const HwPin *pin, uint32_t pull);
 
 void HW_InitCommon(void);
 
