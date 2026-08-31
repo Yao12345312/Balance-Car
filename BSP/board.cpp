@@ -111,7 +111,6 @@ const BoardSpiEntry board_spi_ports[BOARD_SPI_COUNT] = {
 
 // TFmini-S 激光测距 (I2C4)
 // PD12 AF4 (I2C4_SCL), PD13 AF4 (I2C4_SDA)
-// Timing/GPIO 配置与参考工程 (已验证可用) 完全一致
 static const I2C_Config cfg_i2c4 = {
     .scl      = HW_PIN(3, 12, 4),   // PD12 AF4 (I2C4_SCL)
     .sda      = HW_PIN(3, 13, 4),   // PD13 AF4 (I2C4_SDA)
@@ -150,8 +149,8 @@ static const UART_Config cfg_uart1 = {
 };
 
 static const UART_Config cfg_uart4 = {
-    .tx        = HW_PIN(0, 0, 7),   // PA0 AF7 (USART4_TX)
-    .rx        = HW_PIN(0, 1, 7),   // PA1 AF7 (USART4_RX)
+    .tx        = HW_PIN(0, 0, 8),   // PA0 AF8 (UART4_TX)
+    .rx        = HW_PIN(0, 1, 8),   // PA1 AF8 (UART4_RX)
     .baudrate  = 9600,              // US-100 超声波模块默认波特率
     .word_length = UART_WORDLENGTH_8B,
     .stop_bits   = UART_STOPBITS_1,
@@ -161,8 +160,8 @@ static const UART_Config cfg_uart4 = {
     .speed     = GPIO_SPEED_FREQ_HIGH,
     .swap      = false,
     .irq_priority = 5,
-    .tx_dma    = HW_DMA_NONE,      //不使用DMA
-    .rx_dma    = HW_DMA_NONE,      //不使用DMA
+    .tx_dma    = HW_DMA_NONE,		//不使用DMA
+    .rx_dma    = HW_DMA_NONE,		//不使用DMA
 };
 
 const BoardUartEntry board_uart_ports[BOARD_UART_COUNT] = {

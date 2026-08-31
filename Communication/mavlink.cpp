@@ -1,6 +1,7 @@
 #include "mavlink.hpp"
 #include "board.hpp"
 #include "param.hpp"
+#include "param_flash.hpp"
 #include "task_Control.hpp"
 #include "led/drv_led.hpp"
 
@@ -129,30 +130,36 @@ void ParseData(const uint8_t *data, uint16_t len)
             mavlink_command_long_t cmd;
             mavlink_msg_command_long_decode(&mav_msg, &cmd);
 
-            // 控制模式切换
+            // 控制模式切换 (写权威模式字 g_control_mode, 最后写入者生效)
             if (cmd.command == 0x4101)       // 平衡模式
             {
-                g_rc_control_mode = 0;
+                g_control_mode = 0;
                 if (g_controlModeSem != NULL)
                     osSemaphoreRelease(g_controlModeSem);
             }
             else if (cmd.command == 0x4102)  // 单点保持
             {
-                g_rc_control_mode = 1;
+                g_control_mode = 1;
                 if (g_controlModeSem != NULL)
                     osSemaphoreRelease(g_controlModeSem);
             }
             else if (cmd.command == 0x4103)  // 断电停机
             {
-                g_rc_control_mode = 0xFF;
+                g_control_mode = 0xFF;
                 if (g_controlModeSem != NULL)
                     osSemaphoreRelease(g_controlModeSem);
             }
             else if (cmd.command == 0x4104)  // 轮速测试模式
             {
-                g_rc_control_mode = 4;
+                g_control_mode = 4;
                 if (g_controlModeSem != NULL)
                     osSemaphoreRelease(g_controlModeSem);
+            }
+            else if (cmd.command == 0x4106)  // 恢复出厂参数
+            {
+                // 仅停机状态允许: 擦除参数扇区 (~1s) 会冻结控制环
+                if (g_control_mode == 0xFF)
+                    param_reset_to_default();
             }
             break;
         }
@@ -161,10 +168,10 @@ void ParseData(const uint8_t *data, uint16_t len)
             mavlink_manual_control_t manual;
             mavlink_msg_manual_control_decode(&mav_msg, &manual);
 
-            // Z 通道 -> 速度环目标 (rad/s), 限幅 ±8
-            float x_val = (float)manual.z / 125.0f;
-            if (x_val >  8.0f) x_val =  8.0f;
-            if (x_val < -8.0f) x_val = -8.0f;
+            // Z 通道 -> 速度环目标 (rad/s), 限幅 ±20
+            float x_val = (float)manual.z / 50.0f;
+            if (x_val >  20.0f) x_val =  20.0f;
+            if (x_val < -20.0f) x_val = -20.0f;
             g_rc_speed_target = x_val;
 
             // Y 通道 -> 转向 (偏航角速度目标), 限幅 ±4

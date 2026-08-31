@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include "drv_Main.hpp"
+#include "param_flash.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "cmsis_os2.h"
@@ -33,6 +34,9 @@ int main(void)
 {
 	//板级初始化
 	board_init();
+
+	//从 Flash 参数区加载上次固化的参数 (无有效记录保持编译期默认值)
+	param_load_from_flash();
 	
 	//OS内核初始化
 	osKernelInitialize();

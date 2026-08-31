@@ -2,6 +2,7 @@
 #include "sensors/drv_ICM20948.hpp"
 #include "drv_TFMini.hpp"
 #include "drv_US100.hpp"
+#include "drv_buzzer.hpp"
 #include "drv_CubeFOC.hpp"
 #include "MahonyAHRS.hpp"
 #include "LESO.hpp"
@@ -14,11 +15,19 @@
 // 全局共享对象 (声明于 task_Control.hpp, 控制任务创建, 通信任务消费)
 // =============================================================================
 osMessageQueueId_t g_mavSensorQueue = NULL;
+osMessageQueueId_t g_dispSensorQueue = NULL;
 osSemaphoreId_t    g_controlModeSem = NULL;
 
-volatile uint8_t g_rc_control_mode = 0xFF;   // 上电默认停机
+volatile uint8_t g_control_mode = 0xFF;      // 上电默认停机 (菜单/遥控最后写入者生效)
 volatile float   g_rc_speed_target = 0.0f;
 volatile float   g_rc_manual_y     = 0.0f;
+
+Attitude_t  g_attitude = {0};
+osMutexId_t g_att_mutex = NULL;
+
+osSemaphoreId_t g_calibSem = NULL;
+uint8_t         g_calib_command = 0;     // 0=idle, 1=陀螺仪零偏
+bool            g_gyro_calibrated = false;
 
 // 速度环积分 (运行时状态, 非可调参数)
 static float speed_integral = 0.0f;
@@ -83,12 +92,14 @@ static void BalanceCarControl(
     LESO &eso_r)
 {
     const uint32_t arm_count_need = 20U;
-
+	
+	auto *buzzer = drv_buzzer();
+	
     // 温度保护
     if (esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
         esc_status[ESC2_Index].temperature > ESC_MAX_Temperature)
     {
-        g_rc_control_mode = 0xFF;
+        g_control_mode = 0xFF;
         esc_current_cmd[0] = 0;
         esc_current_cmd[1] = 0;
         esc->send_esc_current_commands(esc_current_cmd, 2);
@@ -99,7 +110,7 @@ static void BalanceCarControl(
     if (esc_status[ESC1_Index].rpm > ESC_MAX_SpeedRPM ||
         esc_status[ESC2_Index].rpm > ESC_MAX_SpeedRPM)
     {
-        g_rc_control_mode = 0xFF;
+        g_control_mode = 0xFF;
         esc_current_cmd[0] = 0;
         esc_current_cmd[1] = 0;
         esc->send_esc_current_commands(esc_current_cmd, 2);
@@ -135,7 +146,7 @@ static void BalanceCarControl(
 
         if (arm_counter >= arm_count_need)
         {
-            //TODO: 无蜂鸣器驱动, 原 buzzer.beep(500,200)
+			buzzer->beep(500,200);
             control_armed = true;
         }
 
@@ -199,7 +210,7 @@ static void WheelSpeedTestControl(
     if (esc_status[ESC1_Index].temperature > ESC_MAX_Temperature ||
         esc_status[ESC2_Index].temperature > ESC_MAX_Temperature)
     {
-        g_rc_control_mode = 0xFF;
+        g_control_mode = 0xFF;
         esc_current_cmd[0] = 0;
         esc_current_cmd[1] = 0;
         esc->send_esc_current_commands(esc_current_cmd, 2);
@@ -279,10 +290,18 @@ void StartControlTask(void *argument)
     LESO eso_l;
     LESO eso_r;
 	
-    // 创建传感数据队列 (控制任务 -> 通信任务)
-    g_mavSensorQueue = osMessageQueueNew(8, sizeof(MavSensorData_t), NULL);
+    // 创建传感数据队列 (控制任务 -> 通信任务 / 显示任务)
+    g_mavSensorQueue  = osMessageQueueNew(8, sizeof(MavSensorData_t), NULL);
+    g_dispSensorQueue = osMessageQueueNew(4, sizeof(MavSensorData_t), NULL);
     // 创建模式切换信号量
     g_controlModeSem = osSemaphoreNew(1, 0, NULL);
+    // 姿态互斥锁
+    g_att_mutex = osMutexNew(NULL);
+    // 校准信号量
+    g_calibSem = osSemaphoreNew(1, 0, NULL);
+
+    // 上电时同步一次陀螺仪校准状态
+    g_gyro_calibrated = imu->isGyroCalibrated();
 
     uint32_t next_wake = osKernelGetTickCount();
 
@@ -300,6 +319,15 @@ void StartControlTask(void *argument)
             // 无磁力计, mag 传 0
             ahrs.update(gx, gy, gz, ax, ay, az, 0, 0, 0);
             ahrs.getEulerRad(roll, pitch, yaw);
+
+            // 发布共享姿态 (供显示菜单读取)
+            if (g_att_mutex != NULL && osMutexAcquire(g_att_mutex, 0) == osOK)
+            {
+                g_attitude.roll  = roll;
+                g_attitude.pitch = pitch;
+                g_attitude.yaw   = yaw;
+                osMutexRelease(g_att_mutex);
+            }
 
             // 每 10 周期 (20ms) 打包一帧传感数据入队
             static uint8_t sensor_send_counter = 0;
@@ -321,6 +349,7 @@ void StartControlTask(void *argument)
                 data.current     = -1.0f;     // 无电流计, 未知
                 data.battery_remaining = 0;   // 未知
                 osMessageQueuePut(g_mavSensorQueue, &data, 0, 0);
+                osMessageQueuePut(g_dispSensorQueue, &data, 0, 0);
             }
         }
 
@@ -330,25 +359,26 @@ void StartControlTask(void *argument)
         esc->get_esc_status(ESC2_Index, esc_status[ESC2_Index]);
 
         // 失衡时清速度积分与目标倾角
-        if (fabsf(roll) > 1.0f)
+        if (fabsf(pitch) > 1.0f)
         {
             speed_integral = 0.0f;
             g_delta_theta_ref = 0.0f;
         }
 
         // 角度 = 实际角度 - 机械中值
-        const float theta[1] = { AngleDiffRad(roll, g_params.mechanics_medium) };
-        // theta_dot: [平衡用 X 角速度, 转向用 Z 角速度]
-        const float theta_dot[2] = { gx, gz };
+        const float theta[1] = { AngleDiffRad(pitch, g_params.mechanics_medium) };
+        // theta_dot: [平衡用 Y 角速度, 转向用 Z 角速度]
+        const float theta_dot[2] = { gy, gz };
         const int32_t wheel_speed[2] = { esc_status[ESC1_Index].rpm, esc_status[ESC2_Index].rpm };
 
         // 消费模式切换信号 (acquire 0 立即返回, 用于清标志)
         if (g_controlModeSem != NULL)
             osSemaphoreAcquire(g_controlModeSem, 0);
 
-        // 模式分发
-        if (g_rc_control_mode == 0 || g_rc_control_mode == 1)
-        {
+        // 模式分发 (g_control_mode 为权威模式字: 菜单/遥控最后写入者生效)
+        const uint8_t mode = g_control_mode;
+        if (mode == 0 || mode == 1)
+        {	
             // 平衡模式 / 单点保持: 速度环每 2 周期跑一次
             static uint32_t speed_loop_counter = 0;
             if ((++speed_loop_counter % 2U) == 0U)
@@ -359,7 +389,7 @@ void StartControlTask(void *argument)
                               calib_counter, arm_counter, control_armed,
                               lqr, eso_l, eso_r);
         }
-        else if (g_rc_control_mode == 4)
+        else if (mode == 4)
         {
             WheelSpeedTestControl(esc, esc_status, esc_current_cmd,
                                   calib_counter, arm_counter, control_armed);
@@ -372,6 +402,20 @@ void StartControlTask(void *argument)
             esc->send_esc_current_commands(esc_current_cmd, 2);
             control_armed = false;
             arm_counter = 0;
+        }
+
+        // 校准命令处理 (显示菜单长按触发)
+        if (g_calibSem != NULL)
+        {
+            if (osSemaphoreAcquire(g_calibSem, 0) == osOK)
+            {
+                if (g_calib_command == 1)
+                {
+                    imu->calibrateAllStatic();
+                    g_gyro_calibrated = imu->isGyroCalibrated();
+                }
+                g_calib_command = 0;
+            }
         }
 
         next_wake += 2U;   // 500Hz

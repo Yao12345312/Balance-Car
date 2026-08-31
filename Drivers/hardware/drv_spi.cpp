@@ -212,8 +212,6 @@ SPI_DrvResult SPI_CLASS::transmitReceive(const uint8_t *tx_data, uint8_t *rx_dat
     memcpy(txBounce, tx, size);
 
     // cache 维护仅在 DMA 模式下需要: DMA 绕过 CPU cache 直接访存, 必须保证 cache 一致性
-    // 非 DMA 模式下 CPU 自己读写 bounce buffer, cache 天然一致, 调 cache 维护属于
-    // ARMv7-M "constrained unpredictable" 行为 (尤其 D-cache 禁用时会触发 imprecise bus fault)
     if (useDma)
     {
         __DSB();
@@ -256,8 +254,8 @@ SPI_DrvResult SPI_CLASS::transmitReceive(const uint8_t *tx_data, uint8_t *rx_dat
 
 SPI_DrvResult SPI_CLASS::write(const uint8_t *tx_data, uint16_t size, double timeout)
 {
-    //OLED 等只写设备: 用纯 HAL_SPI_Transmit (与参考工程一致), 避免全双工模式下
-    //MISO 悬空导致 HAL_SPI_TransmitReceive 状态机异常而传输失败 (黑屏)
+    //OLED 等只写设备: 用纯 HAL_SPI_Transmit , 避免全双工模式下
+    //MISO 悬空导致 HAL_SPI_TransmitReceive 状态机异常而传输失败 
     if (size == 0 || tx_data == 0)
         return SPI_Drv_BadParam;
     if (size > SPI_DMA_BUF_SIZE)

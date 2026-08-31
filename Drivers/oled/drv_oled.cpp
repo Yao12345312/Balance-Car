@@ -130,8 +130,9 @@ void DrvOLED::spiSend(const uint8_t *data, uint16_t len)
 {
     if (!data || len == 0)
         return;
-    //OLED 只写, 调用板级统一 SPI 接口
-    board_spi_write(m_port, data, len, 0);
+    //OLED 只写, 调用板级统一 SPI 接口,超时时间50ms
+
+    board_spi_write(m_port, data, len, 0.05);
 }
 
 // =============================================================================
@@ -431,11 +432,20 @@ void DrvOLED::showChinese(int16_t x, int16_t y, const char *chinese)
 void DrvOLED::showFloat(uint8_t x, uint8_t y, float num)
 {
     char buf[20];
-    int32_t temp = (int32_t)(num * 10000);
-    int32_t int_part = temp / 10000;
+
+    //先单独取出符号: C 整数除法向零截断, 若先乘后除,
+    bool neg = (num < 0.0f);
+    if (neg)
+        num = -num;
+
+    //四舍五入到万分位; 若结果为 0 则不显示 "-0.0000"
+    int32_t temp = (int32_t)(num * 10000.0f + 0.5f);
+    if (temp == 0)
+        neg = false;
+
+    int32_t int_part  = temp / 10000;
     int32_t frac_part = temp % 10000;
-    if (frac_part < 0) frac_part = -frac_part;
-    sprintf(buf, "%ld.%04ld", (long)int_part, (long)frac_part);
+    sprintf(buf, "%s%ld.%04ld", neg ? "-" : "", (long)int_part, (long)frac_part);
     showString(x, y, buf);
 }
 

@@ -227,7 +227,7 @@ void I2C_CLASS::unlock()
     osMutexRelease(mutex);
 }
 
-//阻塞模式下 HAL 错误码 -> 驱动结果 (与参考工程一致, 不依赖中断回调)
+//阻塞模式下 HAL 错误码 -> 驱动结果 
 static I2C_DrvResult i2c_map_hal(I2C_HandleTypeDef *h, HAL_StatusTypeDef st)
 {
     if (st == HAL_OK)      return I2C_Drv_Ok;

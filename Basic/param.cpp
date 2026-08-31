@@ -4,19 +4,19 @@
 // =============================================================================
 // 默认参数
 // =============================================================================
-Params g_params =
+const Params k_param_defaults =
 {
-    /*eso_b0*/      600.0f,
+    /*eso_b0*/      1000.0f,
     /*eso_wo*/      100.0f,
     /*eso_wo_rate*/ 100.0f,
 
-    /*lqr_k1*/      { -20.0f, -3.5f, -0.0001f },   // ESC1: [角度, 角速度, 轮速]
-    /*lqr_k2*/      { -20.0f, -3.5f,  0.0001f },   // ESC2
+    /*lqr_k1*/      { -20.0f, -3.0f, -0.0001f },   // ESC1: [角度, 角速度, 轮速]
+    /*lqr_k2*/      { -20.0f, -3.0f,  0.0001f },   // ESC2
     /*lqr_ff1*/     0.0f,
     /*lqr_ff2*/     0.0f,
     /*lqr_max_out*/ 20.0f,
 
-    /*mechanics_medium*/ 0.016f,   // 机械中值 (rad)
+    /*mechanics_medium*/ -0.025f,   // 机械中值 (rad)
     /*kp_speed*/         0.02f,
     /*ki_speed*/         0.0005f,
     /*speed_int_limit*/  0.3f,
@@ -26,6 +26,10 @@ Params g_params =
     /*arm_angle*/        0.10f,
     /*max_balance_angle*/0.30f,
 };
+
+Params g_params = k_param_defaults;
+
+volatile bool g_params_dirty = false;   // param_set 置位, Flash 固化成功后清除
 
 volatile bool g_eso_dirty = true;   // 启动时强制重算一次 beta
 
@@ -99,6 +103,7 @@ bool param_set(uint16_t index, float value)
         return false;
 
     *g_param_table[index].ptr = value;
+    g_params_dirty = true;   // 标记待固化, 通信任务检测后写入 Flash
 
     // ESO 带宽变更 -> 置 dirty, LESO 下次 update() 重算 beta
     float *p = g_param_table[index].ptr;

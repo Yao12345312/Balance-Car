@@ -4,24 +4,24 @@
 #include "mavlink.hpp"
 #include "board.hpp"
 #include "task_Control.hpp"
+#include "param.hpp"
+#include "param_flash.hpp"
 
 void StartCommunicationTask(void *argument)
 {
     auto *ble = bluetooth_driver();
 	
 	auto *buzzer = drv_buzzer();
-	
-    // 蓝牙扫频初始化函数
+
+    // 蓝牙扫频初始化
     if (!ble->autoBaudScan()) {
-        while (1);
+		while(1);
     }
 
     // 初始化 MAVLink 解析器
     MAVLink::Init();
-	
-    uint32_t next_wake = osKernelGetTickCount();
 
-	buzzer->beep(500 ,500);
+    uint32_t next_wake = osKernelGetTickCount();
 	
     while (1)
     {	
@@ -54,6 +54,34 @@ void StartCommunicationTask(void *argument)
 
         // 推进参数流式广播 (PARAM_REQUEST_LIST 触发, 每周期发 2 帧)
         MAVLink::ParamStreamTick();
+
+        // ===== 参数固化调度 =====
+        // 修改后立即追加落盘 (追加写 ~ms 级停顿, 运行中安全);
+        // 扇区写满时挂起, 等待停机状态 (g_control_mode == 0xFF) 再擦除 (~1s 停顿)
+        if (g_params_dirty)
+        {
+            if (param_flash_needs_erase())
+            {
+                // 连续 2 个周期确认停机, 给控制任务时间发出电机零电流指令
+                static uint8_t erase_idle_count = 0;
+                if (g_control_mode == 0xFF)
+                {
+                    if (++erase_idle_count >= 2U)
+                    {
+                        erase_idle_count = 0;
+                        param_flash_flush_erase();
+                    }
+                }
+                else
+                {
+                    erase_idle_count = 0;
+                }
+            }
+            else
+            {
+                param_save_to_flash();
+            }
+        }
 
         next_wake += 50U;
         osDelayUntil(next_wake);

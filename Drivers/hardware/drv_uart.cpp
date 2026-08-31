@@ -67,7 +67,7 @@ template <int N> void uartDrvIrq()
     UART_HandleTypeDef *h = u->handle();
 
     // RX DMA 模式下自行处理 IDLE (HAL_UART_Receive_DMA 不接管 IDLE)。
-    // 必须在 HAL_UART_IRQHandler 之前检测并清除 IDLE 标志, 否则 HAL 会把它当作
+    // 在 HAL_UART_IRQHandler 之前检测并清除 IDLE 标志, 否则 HAL 会把它当作
     // 一次接收完成事件并 abort DMA —— DMA 一旦被 abort, 就会出现重新武装的窗口,
     // 该窗口内到达的字节会触发 ORE 被丢弃, 导致长帧 (如 COMMAND_LONG) CRC 失败。
     if (u->useRxDma && __HAL_UART_GET_FLAG(h, UART_FLAG_IDLE))

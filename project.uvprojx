@@ -420,6 +420,11 @@
               <FileType>8</FileType>
               <FilePath>.\Basic\param.cpp</FilePath>
             </File>
+            <File>
+              <FileName>param_flash.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Basic\param_flash.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -739,6 +744,11 @@
               <FileName>drv_oled.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\Drivers\oled\drv_oled.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>menu.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\Drivers\oled\menu.cpp</FilePath>
             </File>
           </Files>
         </Group>

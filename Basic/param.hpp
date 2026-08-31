@@ -49,6 +49,12 @@ struct Params
 
 extern Params g_params;
 
+// 编译期出厂默认值 (与 g_params 初始值同源, 恢复出厂参数用)
+extern const Params k_param_defaults;
+
+// 参数脏标志: param_set() 置位, 通信任务固化到 Flash 成功后清除
+extern volatile bool g_params_dirty;
+
 // =============================================================================
 // 参数注册表
 //
